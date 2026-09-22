@@ -1,6 +1,40 @@
 # Guanlan architecture
 
+## Media-first sharing
+
+`media CLI -> media.remote -> OpenSSH/Slurm -> ParaView media.render`
+uses selected physical boundary surfaces and native Slice filters, then renders
+PNG frames inside the allocation. `media.package` assembles verified images into
+offline blocks; optional `media.video -> ffmpeg` compiles PNG sequences locally.
+No numerical arrays cross this route, no Matplotlib rendering, no live service.
+Presets and read-only source checks are deterministic. Agent skills under
+`.agents/skills` route expert sessions versus prepared media consumption.
+`viewer/check-media.mjs -> Node vm + synthetic DOM fixture` verifies control logic
+without a browser or GPU; it is separate from visual qualification.
+
+`infrastructure/paraview/Manage-Session.ps1 -> existing OpenSSH + Slurm -> run.sh`
+owns bounded native desktop sessions; Open uses Windows UI Automation only to
+dismiss its new client's welcome dialog. It borrows the managed-tunnel pattern from
+the development fabric without depending on Pi/Paseo or modifying that environment.
+
+`infrastructure/paraview -> official ParaView + Debian/Mesa -> Apptainer/Slurm`
+is the isolated runtime qualification path. It supplies worker preparation and
+optional expert pvserver sessions; it does not replace prepared-asset delivery.
+Native client/server exploration and session-independent snapshots are distinct
+workflows. No bandwidth/performance superiority is assumed for either.
+The optional runtime qualification helper `compare-slices.py -> prepared.store
++ NumPy` checks frozen triangle/scalar correspondence across reader versions;
+it is not part of frame refresh or the browser runtime.
+
 ## Offline interactive snapshots (current iteration)
+
+`worker.extract -> portable.assets -> prepared.store` prepares binary assets
+inside the allocation. `prepared CLI -> selection/store -> portable` retrieves
+only missing selected assets and packages offline HTML. A read-only loopback
+server exercises external-asset browser loading; neither delivery path invokes
+ParaView. Whole-scene JSON remains a debug/import format, not a required transfer.
+Source stores fail at quota; local stores evict unselected content. Ordered
+geometry identity is independent of frame/presentation identity.
 
 `viewer/benchmark.mjs -> playwright-core -> isolated headed Edge + CDP counters`
 is a user-run verification path, not a runtime dependency or a cluster operation.
@@ -34,10 +68,11 @@ guanlan.live -> liveweb -> session -> casepage
                            +-- SSH/srun worker -- ParaView / OpenFOAM
 ```
 
-The real path supports static, decomposed OpenFOAM. ParaView supplies the reader
+The legacy live path supports static, decomposed OpenFOAM. ParaView supplies the reader
 and filters; bundled Matplotlib Agg supplies headless polygon rasterization
-because the installed OpenGL build requires X. Images are bounded orthographic
-previews; trame and smooth 3D interaction remain future integrations.
+because that original OpenGL build required X. Images are bounded orthographic
+previews; new media sharing does not call this Matplotlib path. The dedicated
+ParaView runtime now supplies headless OSMesa rendering. trame remains a future integration.
 
 Worker transport uses stdin/stdout through one persistent SSH connection; no
 compute-node HTTP port is exposed. The browser reads a cached case-page state;

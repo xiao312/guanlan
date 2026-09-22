@@ -1,5 +1,8 @@
 # Local entry points
 
+`verify.ps1` also checks media contracts, packaging, archive integrity, and media
+JavaScript syntax; this does not claim browser interaction testing.
+
 Responsibility: launch/verify the fixture and perform opt-in read-only discovery.
 Non-goals: environment installation or solver case edits. `live.ps1` is the explicit
 real-case path: deploy isolated Guanlan code and request a bounded allocation;

@@ -26,7 +26,7 @@ def validate_scene(scene):
         if not isinstance(scene.get(key), str) or not 1 <= len(scene[key]) <= 4096:
             raise ValueError('invalid scene ' + key)
     datasets, blocks = scene['datasets'], scene['blocks']
-    if not isinstance(datasets, dict) or not 1 <= len(datasets) <= 8 or not 2 <= len(blocks) <= 8:
+    if not isinstance(datasets, dict) or not 1 <= len(datasets) <= 8 or not 1 <= len(blocks) <= 8:
         raise ValueError('scene block/dataset budget exceeded')
     if any(not isinstance(name, str) or not re.fullmatch(r'[a-z][a-z0-9-]{0,63}', name) for name in datasets):
         raise ValueError('invalid dataset identifier')
@@ -71,8 +71,6 @@ def validate_scene(scene):
             for key in ('units', 'label'):
                 if not isinstance(field[key], str) or len(field[key]) > 256:
                     raise ValueError('invalid field metadata')
-    if [b['kind'] for b in blocks[:2]] != ['geometry', 'mesh']:
-        raise ValueError('geometry and mesh must be first')
     if len({b['id'] for b in blocks}) != len(blocks):
         raise ValueError('duplicate block IDs')
     for block in blocks:
@@ -94,6 +92,11 @@ def snapshot_html(scene, bundle, prepared=None):
     validate_scene(scene)
     from guanlan.portable.assets import prepare_assets
     manifest, payloads = prepared or prepare_assets(scene)
+    return prepared_html(manifest, payloads, bundle)
+
+
+def prepared_html(manifest, payloads, bundle, runtime_url=None):
+    """Embed an already selected, integrity-checked prepared store; no raw scene."""
     manifest = dict(manifest)
     import hashlib
     manifest['viewer_sha256'] = hashlib.sha256(bundle.encode()).hexdigest()
@@ -102,13 +105,19 @@ def snapshot_html(scene, bundle, prepared=None):
                        item['payload'] + '</script>' for key, item in payloads.items())
     assets = Path(__file__).parent
     template = (assets / 'template.html').read_text(encoding='utf-8')
-    substitutions = {'__TITLE__': html.escape(scene['title']),
+    substitutions = {'__TITLE__': html.escape(manifest['title']),
                      '__STYLE__': (assets / 'viewer.css').read_text(encoding='utf-8'),
                      '__SCENE__': manifest_json, '__ASSETS__': embedded,
                      '__VIEWER__': bundle.replace('</script', '<\\/script')}
     # Single-pass substitution prevents metadata containing template markers from
     # triggering a second replacement. Metadata is never interpreted as markup.
     result = re.sub(r'__(?:TITLE|STYLE|SCENE|ASSETS|VIEWER)__', lambda match: substitutions[match[0]], template)
+    if runtime_url is not None:
+        if not re.fullmatch(r'runtime/[0-9a-f]{64}\.js',runtime_url):
+            raise ValueError('runtime URL must be a local content-addressed script')
+        result = result.replace('<script>'+substitutions['__VIEWER__']+'</script>',
+                                '<script src="'+runtime_url+'"></script>')
+        result = result.replace("script-src 'unsafe-inline'", "script-src 'self'")
     encoded = result.encode('utf-8')
     if len(encoded) > 32 * 1024 * 1024:
         raise ValueError('HTML exceeds the 32 MiB artifact budget')

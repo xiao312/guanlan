@@ -1,5 +1,14 @@
 # Offline viewer build
 
+`node check-media.mjs` verifies media field/time selection, playback and video
+visibility against a minimal DOM fixture. Dependencies: Node built-ins only;
+dependent: media verification. It is not browser automation or visual qualification.
+
+`node check-loader.mjs` runs the production asset loader against a minimal Node
+document fixture: same-length tampering, cache reuse and decoded-byte quota. It
+does not control a browser or claim GPU results. Binary retrieval is same-origin
+read-only; source-side selection and cache accounting live in `guanlan.prepared`.
+
 ## Headed benchmark runner
 
 `benchmark.mjs` is a user-run Playwright harness for Guanlan HTML (not Glance).

@@ -12,6 +12,20 @@ import { record, account, interaction, captureGPU } from './metrics.js';
 export async function createView(container, block) {
   const source = manifest.datasets[block.dataset];
   const [points, polys] = await Promise.all([loadAsset(source.points), loadAsset(source.polys)]);
+  if(points.length!==source.point_count*3 || !points.every(Number.isFinite))throw new Error('Invalid point array');
+  let cursor=0, cells=0;
+  while(cursor<polys.length) {
+    const size=polys[cursor++];
+    if(size<3 || cursor+size>polys.length)throw new Error('Invalid polygon structure');
+    for(let i=0;i<size;i++)if(polys[cursor++]>=source.point_count)throw new Error('Invalid point reference');
+    cells++;
+  }
+  if(cells!==source.cell_count)throw new Error('Polygon count mismatch');
+  if(source.geometry_id) {
+    const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(source.points+':'+source.polys));
+    const geometry=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
+    if(geometry!==source.geometry_id)throw new Error('Geometry identity mismatch');
+  }
   const data = vtkPolyData.newInstance();
   data.getPoints().setData(points, 3); data.getPolys().setData(polys);
   account('topologyBuilds', 1);
@@ -71,12 +85,17 @@ export async function createView(container, block) {
       stops.push(`rgb(${rgb.map(c=>Math.round(c*255)).join(',')}) ${i/16*100}%`);
     }
     draw('palette-range');
-    return { low, high, distinctValues, units:field.units, label:field.label, gradient:`linear-gradient(to right,${stops.join(',')})` };
+    return { low, high, distinctValues, reader_dtype:field.reader_dtype, units:field.units, label:field.label, gradient:`linear-gradient(to right,${stops.join(',')})` };
   }
   async function field(name, palette, limits, bins=0) {
     const version=++requestVersion, start=performance.now();
-    const values=await loadAsset(source.fields[name].asset);
+    const descriptor=source.fields[name];
+    if(source.geometry_id && (descriptor.geometry_id!==source.geometry_id || descriptor.tuples!==source.cell_count || descriptor.components!==1)) {
+      throw new Error('Field geometry binding mismatch');
+    }
+    const values=await loadAsset(descriptor.asset);
     if (version !== requestVersion) return null;
+    if(values.length!==source.cell_count || !values.every(Number.isFinite))throw new Error('Invalid cell values');
     const distinct = new Set();
     for(const value of values) { distinct.add(value); if(distinct.size>24)break; }
     distinctValues = distinct.size<=24 ? distinct.size : null;

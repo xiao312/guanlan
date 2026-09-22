@@ -28,7 +28,7 @@ def prepare_assets(scene):
         digest = hashlib.sha256(dtype.encode() + b'\0' + raw).hexdigest()
         if digest not in assets:
             zipped = gzip.compress(raw, mtime=0)
-            assets[digest] = {'encoding': 'gzip+base64', 'dtype': dtype,
+            assets[digest] = {'codec': 'gzip', 'encoding': 'gzip+base64', 'dtype': dtype,
                              'decoded_bytes': len(raw), 'compressed_bytes': len(zipped),
                              'payload': base64.b64encode(zipped).decode('ascii')}
         return digest
@@ -39,17 +39,20 @@ def prepare_assets(scene):
         dataset = {key: source[key] for key in ('point_count', 'cell_count')}
         dataset.update(points=add(base64.b64decode(source['points']), 'Float32Array'),
                        polys=add(polygons, 'Uint32Array'), fields={})
+        dataset['geometry_id'] = hashlib.sha256((dataset['points'] + ':' + dataset['polys']).encode()).hexdigest()
         if any(b['kind'] == 'mesh' and b['dataset'] == name for b in scene['blocks']):
             edges = original_edges(polygons)
             dataset.update(edges=add(edges, 'Uint32Array'), edge_count=len(edges) // 12)
         for field_name, field in source['fields'].items():
             dataset['fields'][field_name] = {k: v for k, v in field.items() if k != 'values'}
             dataset['fields'][field_name]['asset'] = add(base64.b64decode(field['values']), 'Float64Array')
+            dataset['fields'][field_name].update(geometry_id=dataset['geometry_id'],
+                                                tuples=source['cell_count'], components=1)
         datasets[name] = dataset
     manifest = {k: v for k, v in scene.items() if k not in ('datasets', 'schema_version')}
     manifest.update(schema_version=2, datasets=datasets,
                     assets={k: {p: v for p, v in item.items() if p != 'payload'} for k, item in assets.items()},
                     fixture_sha256=hashlib.sha256(json.dumps(scene, sort_keys=True, separators=(',', ':')).encode()).hexdigest(),
-                    coverage='Frozen exterior surface and prepared slices only; no arbitrary new planes.',
+                    coverage='Only selected prepared blocks/fields; no arbitrary new planes.',
                     fidelity='Original extracted polygons and cell values; no decimation or scalar interpolation.')
     return manifest, assets

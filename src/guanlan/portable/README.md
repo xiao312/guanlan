@@ -1,5 +1,16 @@
 # Portable interactive case snapshots
 
+Single-block exports are supported; geometry+mesh is a preset, not mandatory.
+For minimal cluster transfer use `guanlan.prepared`: it selects dependencies from
+a source manifest before retrieving binary data. `prepared_html` embeds validated
+selected assets without rebuilding edges or requiring the raw source scene.
+The browser loader accepts either embedded gzip or same-origin `assets/` files,
+verifies SHA-256 over dtype+NUL+canonical bytes, and serializes decodes. Total
+selected decoded arrays are capped at 64 MiB; this is not a total browser/GPU
+memory guarantee. Frozen manifests never accumulate timesteps; a new frame opens
+a new page. Live generation updates and offscreen renderer eviction are deferred.
+Node loader integrity checks: `node viewer/check-loader.mjs` (not a browser test).
+
 Responsibility: package an already extracted scene into one offline HTML file.
 This module never connects to SSH, starts a worker, or reads solver files. Camera,
 mesh edges, field selection, and color ranges are rendered locally by vtk.js.

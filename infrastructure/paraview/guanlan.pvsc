@@ -1,0 +1,5 @@
+<Servers>
+  <Server name="Guanlan allocated server" resource="cs://127.0.0.1:11111">
+    <ManualStartup />
+  </Server>
+</Servers>

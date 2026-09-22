@@ -1,0 +1,34 @@
+// Node-only test of the production loader with a minimal document fixture.
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { gzipSync } from 'node:zlib';
+const raw=Buffer.from(new Float64Array([1,2,3]).buffer);
+const id=createHash('sha256').update('Float64Array\0').update(raw).digest('hex');
+const zipped=gzipSync(raw);
+const manifest={blocks:[{}],assets:{[id]:{dtype:'Float64Array',decoded_bytes:raw.length,compressed_bytes:zipped.length}}};
+globalThis.devicePixelRatio=1;
+let payload=zipped.toString('base64');
+globalThis.document={querySelector:()=>({textContent:JSON.stringify(manifest)}),
+  getElementById:()=>({textContent:payload})};
+const first=await import('../src/guanlan/portable/loader.js?good');
+const values=await first.loadAsset(id);
+assert.deepEqual([...values],[1,2,3]);
+assert.equal(await first.loadAsset(id),values);
+const bad=Buffer.from(raw);bad[0]^=1;
+const altered=gzipSync(bad);payload=altered.toString('base64');
+manifest.assets[id].compressed_bytes=altered.length;
+const second=await import('../src/guanlan/portable/loader.js?bad');
+await assert.rejects(second.loadAsset(id),/hash mismatch/);
+manifest.assets[id].compressed_bytes=zipped.length;
+manifest.asset_base='assets/';
+globalThis.document.getElementById=()=>null;
+globalThis.location={href:'http://127.0.0.1:8767/index.html'};
+let requests=0;
+globalThis.fetch=async()=>{requests++;return new Response(zipped);};
+const external=await import('../src/guanlan/portable/loader.js?external');
+assert.deepEqual([...await external.loadAsset(id)],[1,2,3]);
+await external.loadAsset(id);assert.equal(requests,1);
+await assert.rejects(external.loadAsset('0'.repeat(64)),/Unselected/);
+manifest.assets[id].decoded_bytes=128*1024*1024;
+await assert.rejects(import('../src/guanlan/portable/loader.js?budget'),/budget/);
+console.log(JSON.stringify({integrity:true,cacheReuse:true,externalRequests:requests,decodedBudget:true,browserTest:false}));

@@ -1,0 +1,11 @@
+{
+  "version": "6.1.1",
+  "channel": "stable",
+  "linux_url": "https://www.paraview.org/files/v6.1/ParaView-6.1.1-MPI-Linux-Python3.12-x86_64.tar.gz",
+  "linux_sha256": "9979bd1d9794666a6059f5fa5df352eb92ada58d0bd6b3a8a1ba443939293d2b",
+  "linux_published_md5": "0111a422aa08ff8c9acac0e83d411a2f",
+  "checksum_source": "https://www.paraview.org/files/v6.1/md5sum.txt",
+  "windows_url": "https://www.paraview.org/files/v6.1/ParaView-6.1.1-Windows-Python3.12-msvc2017-AMD64.zip",
+  "windows_published_md5": "6e97a803f7a6ccd4e86520d77ac18570",
+  "note": "SHA256 recorded from HTTPS download after published MD5 check; not an upstream digital signature."
+}

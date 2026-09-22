@@ -4,13 +4,19 @@ import base64
 import json
 import os
 from pathlib import Path
-import resource
 import time
 from guanlan.worker.protocol import emit, report_exception
 
 
 def encode_array(array, dtype):
     return base64.b64encode(array.astype(dtype, copy=False).tobytes()).decode('ascii')
+
+
+def slice_block(plane, fields, offset):
+    if not fields:
+        raise ValueError('at least one field is required')
+    return {'id':plane,'kind':'slice','dataset':plane,'camera':plane,
+            'field':fields[0],'plane':plane,'offset':offset}
 
 
 def export_polydata(source, fields, units):
@@ -43,7 +49,8 @@ def export_polydata(source, fields, units):
         array = data.GetCellData().GetArray(name)
         if array is None:
             raise ValueError('missing cell array: ' + name)
-        values = vtk_to_numpy(array).astype(np.float64, copy=False)
+        original_values = vtk_to_numpy(array)
+        values = original_values.astype(np.float64, copy=False)
         magnitude = values.ndim == 2
         if magnitude:
             values = np.hypot.reduce(values, axis=1)
@@ -52,13 +59,15 @@ def export_polydata(source, fields, units):
         result['fields'][name] = {'values': encode_array(values, '<f8'),
                                   'range': [float(values.min()), float(values.max())],
                                   'units': units[name]['units'], 'association': 'cell',
+                                  'reader_dtype': str(original_values.dtype),
                                   'label': name + (' magnitude' if magnitude else '')}
     return result
 
 
-def extract(case, workspace, title, time_name=None, fields=None):
+def extract(case, workspace, title, time_name=None, fields=None, slice_only=False, planes=None, offset=0.5, audit=False, legacy_lsb64=False, reference_images=False):
     if not os.environ.get('SLURM_JOB_ID'):
         raise ValueError('extract must run in an explicit Slurm allocation, never on a login node')
+    import resource
     from paraview import simple as pvs
     from vtkmodules.vtkCommonCore import vtkOutputWindow, vtkStringOutputWindow
     from guanlan.worker.readiness import partition_paths, latest_candidate, unchanged, field_units
@@ -86,47 +95,64 @@ def extract(case, workspace, title, time_name=None, fields=None):
     reader.CaseType = 'Decomposed Case'
     reader.SkipZeroTime = 1
     reader.UpdatePipelineInformation()
+    available_times = list(reader.TimestepValues)
+    if not any(abs(t-float(time_name)) <= max(1e-12,abs(float(time_name))*1e-9) for t in available_times):
+        raise ValueError('requested timestep is absent from reader')
     patch_counts, processor_faces = physical_boundaries(case)
     available = list(reader.MeshRegions.Available)
     patches = [name for name in available if name.startswith('patch/') and name[6:] in patch_counts]
     missing = {name for name, count in patch_counts.items() if count and 'patch/' + name not in patches}
-    if missing or not patches:
+    if not slice_only and (missing or not patches):
         raise ValueError('physical patch selection mismatch: missing=' + str(missing) + ' available=' + str(available))
     emit({'stage': 'physical-patches', 'patches': patches, 'expected_faces': sum(patch_counts.values()),
           'excluded_processor_faces': processor_faces})
-    reader.MeshRegions = patches
-    reader.CellArrays = []
+    reader.MeshRegions = ['internalMesh'] if slice_only else patches
+    reader.CellArrays = fields if slice_only else []
     reader.UpdatePipeline(float(time_name))
     read_done = time.monotonic()
     emit({'stage': 'read', 'elapsed_seconds': time.monotonic() - started,
           'errors': errors.GetOutput()[-2000:]})
     bounds = reader.GetDataInformation().GetBounds()
-    surface = pvs.ExtractSurface(Input=reader)
-    surface.UpdatePipeline(float(time_name))
-    emit({'stage': 'surface', 'elapsed_seconds': time.monotonic() - started})
     units = field_units(case, time_name, fields)
-    datasets = {'surface': export_polydata(surface, [], units)}
-    if datasets['surface']['cell_count'] != sum(patch_counts.values()):
-        raise ValueError('surface count does not match physical boundary faces; refusing publication')
+    datasets, blocks = {}, []
+    if not slice_only:
+        surface = pvs.ExtractSurface(Input=reader)
+        surface.UpdatePipeline(float(time_name))
+        datasets['surface'] = export_polydata(surface, [], units)
+        if datasets['surface']['cell_count'] != sum(patch_counts.values()):
+            raise ValueError('surface count does not match physical boundary faces; refusing publication')
+        blocks = [{'id':'geometry','kind':'geometry','dataset':'surface','camera':'xy'},
+                  {'id':'mesh','kind':'mesh','dataset':'surface','camera':'xy'}]
+        pvs.Delete(surface)
     surface_done = time.monotonic()
     reader.MeshRegions = ['internalMesh']
     reader.CellArrays = fields
     reader.UpdatePipeline(float(time_name))
     field_read_done = time.monotonic()
-    blocks = [{'id': 'geometry', 'kind': 'geometry', 'dataset': 'surface', 'camera': 'xy'},
-              {'id': 'mesh', 'kind': 'mesh', 'dataset': 'surface', 'camera': 'xy'}]
-    slice_metrics = {}
-    for plane, axis in [('xy', 2)]:
+    native_audit = {}
+    if audit:
+        from guanlan.worker.audit import audit_reader
+        native_audit = audit_reader(reader, case, time_name, fields, legacy_lsb64)
+        emit({'stage':'native-scalar-audit','fields':native_audit})
+    slice_metrics, reference_metrics = {}, {}
+    for plane in planes or ['xy']:
+        axis = {'xy':2,'xz':1,'yz':0}[plane]
         slice_started = time.monotonic()
         sliced = pvs.Slice(Input=reader)
         sliced.SliceType = 'Plane'
-        sliced.SliceType.Origin = [(bounds[i*2] + bounds[i*2+1]) / 2 for i in range(3)]
+        origin = [(bounds[i*2] + bounds[i*2+1]) / 2 for i in range(3)]
+        origin[axis] = bounds[axis*2] + offset*(bounds[axis*2+1]-bounds[axis*2])
+        sliced.SliceType.Origin = origin
         sliced.SliceType.Normal = [int(i == axis) for i in range(3)]
         sliced.UpdatePipeline(float(time_name))
         datasets[plane] = export_polydata(sliced, fields, units)
         slice_metrics[plane] = time.monotonic() - slice_started
-        blocks.append({'id': plane, 'kind': 'slice', 'dataset': plane, 'camera': plane,
-                       'field': 'p', 'plane': plane, 'offset': 0.5})
+        blocks.append(slice_block(plane, fields, offset))
+        if reference_images:
+            from guanlan.worker.reference import render_slice
+            reference_started = time.monotonic()
+            render_slice(sliced, fields, plane, float(time_name), workspace / 'reference-images')
+            reference_metrics[plane] = time.monotonic() - reference_started
         pvs.Delete(sliced)
     if 'ERROR' in errors.GetOutput():
         raise ValueError('ParaView extraction failed: ' + errors.GetOutput()[-1500:])
@@ -138,6 +164,10 @@ def extract(case, workspace, title, time_name=None, fields=None):
             'reader_seconds': read_done-started, 'surface_export_seconds': surface_done-read_done,
             'field_reader_seconds': field_read_done-surface_done,
             'slice_export_seconds': slice_metrics, 'paraview_version': str(pvs.GetParaViewVersion()),
+            'reference_render_seconds': reference_metrics,
+            'reader_times': available_times, 'bounds': list(bounds),
+            'native_scalar_audit': native_audit,
+            'native_audit_profile': 'explicit legacy little-endian Float64' if legacy_lsb64 else 'file-declared architecture',
             'physical_patch_faces': patch_counts, 'excluded_processor_faces': processor_faces,
             'surface_policy': 'selected physical patches; no volume merge or coordinate welding',
             'volume_cells': reader.GetDataInformation().GetNumberOfCells(),
@@ -151,6 +181,13 @@ def main():
         parser.add_argument('--' + name, required=True)
     parser.add_argument('--time-name', help='Pin an existing completed timestep for a reproducible fixture')
     parser.add_argument('--fields', nargs='+', default=['p', 'T'], help='Selected arrays; default p T')
+    parser.add_argument('--slice-only', action='store_true')
+    parser.add_argument('--prepared', action='store_true')
+    parser.add_argument('--audit-scalars', action='store_true')
+    parser.add_argument('--reference-images', action='store_true', help='Direct ParaView PNG/state baseline; requires headless rendering')
+    parser.add_argument('--legacy-lsb64', action='store_true', help='Explicit legacy scalar binary profile when arch is absent')
+    parser.add_argument('--planes', nargs='+', choices=['xy','xz','yz'], default=['xy'])
+    parser.add_argument('--offset', type=float, default=0.5)
     args = parser.parse_args()
     output = Path(args.output).resolve()
     workspace = Path(args.workspace).resolve()
@@ -158,7 +195,17 @@ def main():
         raise ValueError('output must stay inside the dedicated workspace')
     if any(not name.replace('_', '').isalnum() for name in args.fields):
         raise ValueError('field names must be alphanumeric with optional underscores')
-    result = extract(args.case, args.workspace, args.title, args.time_name, args.fields)
+    if not 0 < args.offset < 1:
+        raise ValueError('offset must lie strictly between 0 and 1')
+    result = extract(args.case, args.workspace, args.title, args.time_name, args.fields,
+                     args.slice_only, args.planes, args.offset, args.audit_scalars, args.legacy_lsb64, args.reference_images)
+    if args.prepared:
+        from guanlan.prepared.store import publish
+        manifest = publish(result, output)
+        emit({'prepared_frame':manifest['frame_id'], 'assets':len(manifest['assets']),
+              'compressed_bytes':sum(a['compressed_bytes'] for a in manifest['assets'].values()),
+              'metrics':result['metrics']})
+        return
     serialize_started = time.monotonic()
     payload = json.dumps(result, allow_nan=False, separators=(',', ':')).encode()
     result['metrics']['serialization_seconds'] = time.monotonic() - serialize_started
@@ -168,7 +215,6 @@ def main():
     temporary = output.with_suffix('.pending')
     temporary.write_bytes(payload)
     temporary.replace(output)
-    from guanlan.worker.protocol import emit
     emit({'scene_bytes': len(payload), 'metrics': result['metrics'],
           'datasets': {k: {'cells': v['cell_count'], 'points': v['point_count']} for k, v in result['datasets'].items()}})
 

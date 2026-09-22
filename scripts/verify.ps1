@@ -13,6 +13,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Browser JavaScript syntax check failed' }
         & node --check (Join-Path $projectRoot 'src/guanlan/liveweb/app.js')
         if ($LASTEXITCODE -ne 0) { throw 'Live case JavaScript syntax check failed' }
+        & node --check (Join-Path $projectRoot 'src/guanlan/media/viewer.js')
+        if ($LASTEXITCODE -ne 0) { throw 'Media JavaScript syntax check failed' }
+        & node (Join-Path $projectRoot 'viewer/check-media.mjs')
+        if ($LASTEXITCODE -ne 0) { throw 'Media control logic check failed' }
         Get-ChildItem (Join-Path $projectRoot 'src/guanlan/portable') -Filter '*.js' | ForEach-Object {
             Get-Content -Raw $_.FullName | & node --input-type=module --check
             if ($LASTEXITCODE -ne 0) { throw "Portable JavaScript syntax check failed: $($_.Name)" }

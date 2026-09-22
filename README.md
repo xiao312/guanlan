@@ -1,5 +1,14 @@
 # Guanlan · 观澜
 
+Two supported workflow entry points are [agent skills](docs/agent-workflows.md):
+native ParaView expert sessions and [ParaView-rendered media sharing](src/guanlan/media/README.md).
+Media presets produce images/time sequences near the case, then assemble offline
+blocks locally without transferring a CFD dataset or keeping an allocation alive.
+
+For open-ended CFD exploration, see the [ParaView expert path](docs/paraview-expert.md).
+Prepared views complement that allocated processing session; they do not claim
+to replace ParaView or universally reduce bandwidth.
+
 Set up the view once. See it update. Share it immediately.
 
 Guanlan is an experimental, lightweight visualization layer for CFD. It separates
@@ -12,10 +21,12 @@ scientific validity or manage engineering acceptance.
 - Local vtk.js rotation, pan, zoom, field switching and color-range controls.
 - Equivalent VTP export and a pinned Glance comparison wrapper.
 - Read-only OpenFOAM extraction in a separately allocated Slurm worker.
-- An image-based live prototype; recipient-reachable hosting is deferred.
+- ParaView-only media presets, bounded cluster rendering, media-only fetch, offline
+  block pages with time/field selection, and optional MP4 compilation.
+- An older image-based live prototype; recipient-reachable hosting is deferred.
 
-Real datasets and generated HTML are not bundled. Browser/GPU performance and
-corrected physical-boundary extraction remain unqualified. See
+Real datasets and generated HTML are not bundled. Browser/GPU performance remains
+unqualified; reader/media qualification is limited to tested cases. See
 [publication and qualification limits](docs/publication.md).
 
 ## Development
@@ -53,6 +64,8 @@ read-only. Fluent and runtime extraction integration are not yet qualified.
 
 See [operation](docs/real-case-runbook.md), [architecture](docs/architecture.md),
 [contracts](docs/contracts.md) and [milestones](docs/milestones.md).
+For source-side preparation and selected missing-asset transfer, see
+[minimal asset delivery](docs/minimal-assets.md).
 
 ## Layout and privacy
 

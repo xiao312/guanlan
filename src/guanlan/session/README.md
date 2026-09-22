@@ -1,5 +1,9 @@
 # Case session and compute transport
 
+Code-only deployment also includes portable/prepared Python modules for the
+separate source-side extraction command. The image session itself still transfers
+PNGs; it does not become a binary-asset transport implicitly.
+
 Runs one explicitly configured warm ParaView worker via SSH and `srun`. The worker
 reads the case in its existing location; only PNG previews and metadata cross SSH.
 No case data is copied. No heavy work runs on the login node. Allocation is bounded

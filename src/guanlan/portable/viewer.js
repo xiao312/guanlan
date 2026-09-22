@@ -34,6 +34,7 @@ function makeBlock(block,index) {
     legend.append(element('span',numeric(info.low)),ramp,element('span',numeric(info.high)),element('span',info.units));
     status.textContent=info.label+' · cell values, no interpolation · t = '+manifest.simulation_time+' s';
     if(info.distinctValues!==null) status.textContent+=` · Only ${info.distinctValues} distinct values in this prepared field`;
+    if(info.reader_dtype) status.textContent+=` · Reader ${info.reader_dtype}, stored Float64`;
   }
   function limits() {
     if(!low.value&&!high.value)return null;

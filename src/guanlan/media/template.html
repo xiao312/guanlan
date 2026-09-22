@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; media-src data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>__TITLE__</title><style>
+:root{color-scheme:light;font:14px/1.5 system-ui,sans-serif;color:#263144;background:#f3f4f6}
+*{box-sizing:border-box}body{margin:0}header,main{max-width:1500px;margin:auto;padding:24px}
+header{padding-bottom:8px}.brand{font:12px ui-monospace,monospace;letter-spacing:.14em;color:#718096}
+h1{font-size:26px;margin:8px 0}p{margin:6px 0;color:#657287}.controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:18px}
+button,select{background:white;color:inherit;border:1px solid #cfd6df;border-radius:7px;padding:6px 10px;font:inherit;cursor:pointer}
+input[type=range]{flex:1;min-width:140px;max-width:520px;accent-color:#5271a3}
+main{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;padding-top:16px}
+article{background:white;border:1px solid #dfe4ec;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px #24314906}
+.block-head{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid #edf0f4;flex-wrap:wrap}
+h2{font-size:15px;font-weight:600;margin:0;flex:1}.viewport{overflow:auto;background:#f1f3f5;max-height:70vh;cursor:zoom-in}
+img,video{display:block;width:100%;height:auto}.viewport.zoom img{width:auto;max-width:none}.viewport.zoom{cursor:zoom-out}summary{padding:10px 16px;cursor:pointer;color:#5271a3}
+.caption{font:12px/1.6 ui-monospace,monospace;padding:10px 16px;color:#627085;white-space:pre-wrap}footer{padding:12px 24px;text-align:center;color:#718096;font-size:12px}
+@media(max-width:850px){main{grid-template-columns:1fr}header,main{padding:16px}}
+</style></head><body><header><div class="brand">GUANLAN / PREPARED VIEW</div><h1>__TITLE__</h1>
+<p id="case"></p><p>ParaView-rendered snapshot · offline · images only, no source mesh or numerical arrays</p>
+<div class="controls"><button id="play" type="button">Play sequence</button><input id="timeline" aria-label="Prepared timestep" type="range" min="0" value="0"><output id="time"></output></div>
+</header><main id="blocks"></main><footer>Click an image for native-pixel zoom. Camera and slice changes require a new prepared render. Playback advances prepared samples, not uniform simulation time.</footer>
+<script id="data" type="application/json">__DATA__</script><script>__VIEWER__</script></body></html>

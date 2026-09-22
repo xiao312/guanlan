@@ -1,5 +1,36 @@
 # Allocated case renderer
 
+New image/video sharing uses `media.render`, which depends on this module's
+readiness, physical-boundary metadata and diagnostic protocol helpers. It uses
+ParaView for both extraction and rendering. The older `main/pipeline/software`
+Matplotlib service below is retained for compatibility, not selected by media skills.
+
+Optional `extract --reference-images` renders direct ParaView slices using the
+same cell association, Viridis range and orthographic plane camera. This requires
+a qualified headless ParaView runtime and remains allocation-only. It writes
+reference PNGs and a ParaView state beside the prepared store, not into the case.
+It is an independent presentation baseline, not proof of browser pixel equality.
+`reference.py` depends only on ParaView; image generation never uses Matplotlib.
+The scalar audit additionally records ordered-array equality (not just a histogram);
+ordering disagreement is reported, not hidden by the multiset check.
+
+Selective extraction adds `--slice-only`, `--planes xy xz yz` and `--offset`
+(normalized position). `--prepared` writes a source-side manifest/gzip store at
+--output instead of a whole scene. Default slice field is the first selected field.
+Dependencies include portable validation/assets and prepared.store, deployed as
+Python modules. Source-store cap is 256 MiB; exceeding it fails publication.
+`--audit-scalars` compares native scalar arrays with the internal reader cell-value
+multiset inside the allocation. ASCII and declared-endian binary are supported;
+uniform arrays require the native owner header's nCells metadata. For older files
+without an architecture header, `--legacy-lsb64` explicitly selects little-endian
+Float64; it is recorded and binary count/closing delimiters must match. Never
+silently infer this profile for other installations. Unsupported vectors fail.
+This verifies field reading, not cell-position correspondence or scientific quality.
+The audit compares exactly after casting native values to the reader's actual
+dtype and separately records exact-native equality and maximum rounding error.
+VTK's OpenFOAM reader may output Float32 despite binary64 input; exported Float64
+containers do not restore discarded precision. Field descriptors record reader_dtype.
+
 `extract.py` is a separate one-shot, non-rendering export path for portable HTML.
 Under an explicit Slurm allocation it reads selected fields (default p/T), extracts one exterior surface
 and one XY slice, and writes a bounded version-1 scene JSON in Guanlan's workspace.

@@ -1,0 +1,8 @@
+{
+  "version": "6.1.1",
+  "ssh_alias": "my-cluster",
+  "remote_runtime": "/project/infrastructure/paraview/6.1.1",
+  "image": "/project/infrastructure/paraview/6.1.1/images/paraview.sif",
+  "client_directory": "D:/projects/guanlan/state/pv611",
+  "case_profile": "config/my-case.local.json"
+}

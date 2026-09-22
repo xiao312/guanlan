@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "title": "Prepared CFD views",
+  "case_label": "Example case — replace with a safe label",
+  "times": ["0.1", "0.2"],
+  "size": [1280, 640],
+  "blocks": [
+    {"id": "geometry", "kind": "geometry", "title": "Physical boundary geometry", "camera": "isometric"},
+    {"id": "mesh", "kind": "mesh", "title": "Original boundary mesh", "camera": "xy"},
+    {"id": "xy", "kind": "slice", "title": "XY center plane", "plane": "xy", "offset": 0.5, "fields": ["p", "T"], "range": "data", "palette": "Viridis"}
+  ]
+}

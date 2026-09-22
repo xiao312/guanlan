@@ -57,7 +57,7 @@ class Session:
         source = Path(__file__).resolve().parents[1]
         with tarfile.open(package, 'w') as archive:
             archive.add(source / '__init__.py', arcname='guanlan/__init__.py')
-            for module in ('worker', 'casepage'):
+            for module in ('worker', 'casepage', 'portable', 'prepared'):
                 for path in sorted((source / module).glob('*.py')):
                     archive.add(path, arcname='guanlan/' + module + '/' + path.name)
         subprocess.run(['scp', '-q', str(package), p['ssh_alias'] + ':' + target + '/worker.tar'], check=True, timeout=60)
