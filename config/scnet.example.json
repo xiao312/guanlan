@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "ssh_alias": "your-cluster-alias",
+  "job_ids": [123456789]
+}

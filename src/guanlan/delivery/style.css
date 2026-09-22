@@ -1,0 +1,27 @@
+:root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: #0b131c; color: #e4edf4; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+header, main, footer { max-width: 1360px; margin: auto; padding: 28px 40px; }
+header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #26323d; }
+.brand { color: #6ce2c0; font-size: 26px; text-decoration: none; letter-spacing: .05em; }
+.brand span { color: #e4edf4; font-size: 18px; margin-left: 10px; }
+.badge { font-size: 11px; letter-spacing: .1em; padding: 7px 10px; border: 1px solid #475666; border-radius: 4px; color: #b7c7d5; }
+.heading { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin: 22px 0 32px; }
+.eyebrow { color: #6ce2c0; font-size: 11px; letter-spacing: .17em; }
+h1 { font-size: clamp(28px, 3.2vw, 44px); font-weight: 500; letter-spacing: -.04em; margin: 12px 0; }
+.intro, details, #notice { color: #97aabd; font-size: 14px; line-height: 1.7; }
+.actions { display: flex; gap: 10px; padding-bottom: 4px; flex-wrap: wrap; }
+button, .button, select { border: 1px solid #3b5264; border-radius: 6px; background: #192b39; color: #e4edf4; padding: 11px 14px; font: inherit; font-size: 13px; text-decoration: none; cursor: pointer; }
+button:hover, .button:hover { border-color: #6ce2c0; }
+[aria-disabled="true"], button:disabled { opacity: .4; pointer-events: none; }
+.viewport { border: 1px solid #304251; border-radius: 10px; overflow: hidden; background: #101d29; }
+.toolbar, .caption { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 22px; font-size: 12px; color: #a8bac8; }
+.toolbar { border-bottom: 1px solid #283c4b; }
+select { margin-left: 10px; padding: 7px 10px; }
+#status { color: #6ce2c0; }
+.image-wrap { min-height: 250px; display: grid; align-items: center; }
+#preview { display: block; width: 100%; max-height: 600px; }
+.caption { border-top: 1px solid #283c4b; flex-wrap: wrap; }
+details { max-width: 850px; margin-top: 25px; } summary { cursor: pointer; color: #c3d2dd; }
+footer { font-size: 10px; color: #647b8e; letter-spacing: .12em; padding-top: 45px; }
+@media (max-width: 800px) { header, main, footer { padding: 22px 18px; } .heading { flex-direction: column; align-items: flex-start; } .toolbar { padding: 12px; } .badge { font-size: 9px; } }

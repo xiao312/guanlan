@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "id": "pressure",
+  "case_id": "synthetic-jet",
+  "panels": [{"field": "p", "operation": "scalar", "association": "point", "units": "Pa", "color_range": [0, 100000]}],
+  "plane": {"origin": [0, 0, 0], "normal": [0, 0, 1]},
+  "camera": {"position": [0, 0, 1], "target": [0, 0, 0], "up": [0, 1, 0]},
+  "refresh": {"policy": "latest", "interval_seconds": 2},
+  "limits": {"max_preview_bytes": 262144}
+}

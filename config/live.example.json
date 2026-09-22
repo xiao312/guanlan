@@ -1,0 +1,14 @@
+{
+  "case_id": "my-openfoam-case",
+  "title": "My OpenFOAM case",
+  "ssh_alias": "cluster-alias",
+  "case_directory": "/path/to/case",
+  "remote_workspace": "/path/to/guanlan/live-session",
+  "pvpython": "/path/to/paraview/bin/pvpython",
+  "partition": "compute",
+  "cpus": 4,
+  "memory_mb": 12288,
+  "walltime_minutes": 60,
+  "idle_seconds": 300,
+  "refresh_seconds": 20
+}

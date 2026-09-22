@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "observed_on": "2026-09-22",
+  "ssh_alias": "your-cluster-alias",
+  "cases": [
+    {
+      "job_id": 123456789,
+      "solver_family": "openfoam",
+      "observed_state": "RUNNING",
+      "run_directory": "/path/to/run",
+      "case_directory": "/path/to/run/case"
+    }
+  ]
+}

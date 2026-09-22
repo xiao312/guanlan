@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guanlan · Live view</title><link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header><a class="brand" href="/">观澜 <span>Guanlan</span></a><span class="badge">SYNTHETIC DEMO</span></header>
+  <main>
+    <div class="heading"><div><p class="eyebrow">A WINDOW INTO YOUR RUN</p><h1>One view. Always moving.</h1>
+      <p class="intro">Choose a saved view, follow its updates, take a moment with you.</p></div>
+      <div class="actions"><button id="share" disabled>Copy local live link</button><a id="snapshot" class="button" aria-disabled="true">Download snapshot</a></div>
+    </div>
+    <section class="viewport" aria-label="Live visualization">
+      <div class="toolbar"><label>Saved view <select id="view" aria-label="Saved view"></select></label><span id="status" role="status">Connecting…</span></div>
+      <div class="image-wrap"><img id="preview" alt="Synthetic visualization preview"></div>
+      <div class="caption"><span id="caption">Waiting for the first preview</span><span>Fixed camera · center plane</span></div>
+    </section>
+    <p id="notice" role="status">Local development fixture. These images are synthetic, not results from your simulations.</p>
+    <details><summary>About this view</summary><p>The saved JSON recipe fixes fields, units, camera and colors. Refreshing needs no model calls. A snapshot freezes the displayed frame; a live view continues to update.</p><p>This local URL is not a deployed sharing endpoint. A recipient needs an approved reachable service for live sharing. Downloaded SVG snapshots can be opened independently.</p></details>
+  </main>
+  <footer>SET UP ONCE &nbsp; / &nbsp; SEE IT UPDATE &nbsp; / &nbsp; SHARE THE MOMENT</footer>
+</body>
+</html>

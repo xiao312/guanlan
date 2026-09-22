@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'">
+<title>__TITLE__ · Guanlan snapshot</title><style>__STYLE__</style></head>
+<body><aside><div class="brand">观澜 <span>GUANLAN</span></div><nav id="nav"></nav><p>Portable case<br>Frozen data · local interaction</p></aside>
+<main><header><div><small>CASE SNAPSHOT</small><h1>__TITLE__</h1><p id="subtitle">Reading manifest…</p></div>
+<label>Appearance <select id="theme"><option value="paper">Paper</option><option value="graphite">Graphite</option><option value="midnight">Midnight</option></select></label></header>
+<p id="case-path" class="path"></p><p id="coverage" class="muted"></p>
+<div class="tools"><button id="layout">Switch to two columns</button><button id="measure">Start measurement</button><button id="report">Download measurements</button><span id="measurement-state">Not measuring</span></div>
+<p id="error" role="alert"></p><div id="blocks"></div>
+<details><summary>Snapshot provenance and limitations</summary><pre id="details"></pre></details>
+<noscript>This interactive snapshot requires JavaScript and WebGL2. The original image snapshot remains a separate artifact.</noscript></main>
+<script id="manifest" type="application/json">__SCENE__</script>__ASSETS__
+<script>__VIEWER__</script></body></html>
