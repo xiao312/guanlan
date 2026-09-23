@@ -28,6 +28,8 @@ case "$mode" in
     --timeout=15 --force-offscreen-rendering --opengl-window-backend=OSMesa) ;;
   media) command+=(pvpython --no-mpi --force-offscreen-rendering --opengl-window-backend=OSMesa -m guanlan.media.render
     --case "$case_dir" --workspace "$workspace" "$@") ;;
+  fluent-media) command+=(pvpython --no-mpi --force-offscreen-rendering --opengl-window-backend=OSMesa -m guanlan.media.fluent
+    --case "$case_dir" --workspace "$workspace" "$@") ;;
   *) echo 'Unknown operation' >&2; exit 2 ;;
 esac
 [[ -n "${SLURM_JOB_ID:-}" ]] || { echo 'Submit through Slurm; no login-node computation' >&2; exit 2; }

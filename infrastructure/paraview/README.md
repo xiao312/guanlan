@@ -70,6 +70,8 @@ the site's MPI. No host MPI or scheduler libraries are required inside this imag
 The `media` operation runs `guanlan.media.render` using the same read-only case
 binding and headless backend. The media CLI deploys a code-only copy of run.sh to
 its own request workspace, so preparation does not overwrite an active session.
+`fluent-media` uses the same allocation and bind policy for a saved planar Fluent
+CFF case/data series, with a private source index deployed in that workspace.
 
 Security: build context contains only this Dockerfile and public binary archive.
 No credentials or case data in image layers. Bind cases read-only; bind a separate

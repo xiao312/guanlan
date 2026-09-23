@@ -51,7 +51,7 @@ def validate(preset):
         ids.add(b['id'])
         if b['kind'] not in ('geometry', 'mesh', 'slice'):
             raise ValueError('unsupported block kind')
-        allowed = {'id', 'kind', 'title', 'camera', 'patches'} if b['kind'] != 'slice' else {'id', 'kind', 'title', 'camera', 'plane', 'offset', 'fields', 'palette', 'range'}
+        allowed = {'id', 'kind', 'title', 'camera', 'patches', 'focus'} if b['kind'] != 'slice' else {'id', 'kind', 'title', 'camera', 'plane', 'offset', 'fields', 'palette', 'range', 'focus'}
         if set(b) - allowed:
             raise ValueError('unknown block options: ' + str(set(b) - allowed))
         if b['kind'] == 'slice':
@@ -63,7 +63,7 @@ def validate(preset):
             for field in fields: name(field)
             if len(set(fields)) != len(fields): raise ValueError('duplicate field')
             b.setdefault('palette', 'Viridis')
-            if b['palette'] not in ('Viridis', 'Cool to Warm', 'Inferno (matplotlib)'):
+            if b['palette'] not in ('Viridis', 'Cool to Warm'):
                 raise ValueError('unsupported palette')
             b.setdefault('range', 'data')
             r = b['range']
@@ -79,6 +79,12 @@ def validate(preset):
         b.setdefault('camera', b.get('plane', 'xy'))
         if b['camera'] not in ('xy', 'xz', 'yz', 'isometric'):
             raise ValueError('unsupported camera preset')
+        if 'focus' in b:
+            focus = b['focus']
+            if (b['camera'] == 'isometric' or not isinstance(focus, list) or len(focus) != 4
+                    or not all(number(v) and 0 <= v <= 1 for v in focus)
+                    or not (focus[0] < focus[1] and focus[2] < focus[3])):
+                raise ValueError('focus requires a planar camera and normalized [u0, u1, v0, v1] bounds')
     if frames > MAX_FRAMES: raise ValueError('preset exceeds 192 frames')
     return p
 

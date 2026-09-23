@@ -2,13 +2,18 @@
 
 ## Media-first sharing
 
-`media CLI -> media.remote -> OpenSSH/Slurm -> ParaView media.render`
-uses selected physical boundary surfaces and native Slice filters, then renders
-PNG frames inside the allocation. `media.package` assembles verified images into
+`media CLI -> media.remote -> OpenSSH/Slurm -> ParaView media.render/media.fluent`
+uses selected physical boundary surfaces and native Slice filters for OpenFOAM,
+or a native planar CFF reader for the qualified Fluent pilot, then renders PNG
+frames inside the allocation. `media.package` assembles verified images into
 offline blocks; optional `media.video -> ffmpeg` compiles PNG sequences locally.
 No numerical arrays cross this route, no Matplotlib rendering, no live service.
 Presets and read-only source checks are deterministic. Agent skills under
 `.agents/skills` route expert sessions versus prepared media consumption.
+The Fluent adapter consumes a private timestep-to-case/data index, validates
+source pairs and mapped scalar cell arrays, and uses the same manifest and
+bounded media-only transfer contract. It does not yet support Fluent species
+arrays rejected by the reader, three-dimensional CFF slicing, or patch selection.
 `viewer/check-media.mjs -> Node vm + synthetic DOM fixture` verifies control logic
 without a browser or GPU; it is separate from visual qualification.
 

@@ -37,6 +37,13 @@ def profile(path):
     if '/guanlan/' not in c['remote_workspace']: raise ValueError('workspace must be under guanlan')
     for k, lo, hi in [('cpus', 1, 16), ('memory_mb', 1024, 65536)]:
         if type(c[k]) is not int or not lo <= c[k] <= hi: raise ValueError('resource limit out of bounds: '+k)
+    source_format = c.get('source_format', 'openfoam')
+    if source_format not in ('openfoam', 'fluent-cff'):
+        raise ValueError('unsupported source format')
+    if source_format == 'fluent-cff' and not isinstance(c.get('source_index'), str):
+        raise ValueError('Fluent CFF needs a private source index path')
+    if source_format == 'openfoam' and 'source_index' in c:
+        raise ValueError('OpenFOAM case must not set a Fluent source index')
     return p, c
 
 
@@ -51,6 +58,11 @@ def scp(source, target):
 def submit(profile_path, preset_path, state_path, minutes=20):
     p, c = profile(profile_path)
     preset = validate(read_json(preset_path))
+    source_format = c.get('source_format', 'openfoam')
+    index = None
+    if source_format == 'fluent-cff':
+        from guanlan.media.fluent import validate_index
+        index = validate_index(read_json(c['source_index']), preset)
     if not 5 <= minutes <= 60: raise ValueError('walltime must be 5-60 minutes')
     state = Path(state_path).resolve()
     if state.exists(): raise ValueError('state exists; inspect status instead of duplicate submission')
@@ -68,6 +80,10 @@ def submit(profile_path, preset_path, state_path, minutes=20):
                                   ('run.sh', (PROJECT / 'infrastructure/paraview/run.sh').read_bytes().replace(b'\r\n', b'\n'))]:
             info = tarfile.TarInfo(filename); info.size = len(payload); info.mode = 0o600
             archive.addfile(info, io.BytesIO(payload))
+        if index is not None:
+            payload = json.dumps(index).encode()
+            info = tarfile.TarInfo('source-index.json'); info.size = len(payload); info.mode = 0o600
+            archive.addfile(info, io.BytesIO(payload))
     alias = p['ssh_alias']
     ssh(alias, 'mkdir ' + shlex.quote(remote))
     scp(bundle, alias+':'+remote+'/worker.tar')
@@ -76,8 +92,11 @@ def submit(profile_path, preset_path, state_path, minutes=20):
                '--nodes=1', '--ntasks=1', '--cpus-per-task='+str(c['cpus']), '--mem='+str(c['memory_mb'])+'M',
                '--time='+str(minutes), '--chdir='+remote, '--output='+remote+'/job-%j.log',
                '--error='+remote+'/job-%j.err', '--export=ALL,GUANLAN_SCRATCH_ROOT=/tmp',
-               remote+'/run.sh', 'media', p['image'], c['case_directory'], remote,
+               remote+'/run.sh', 'fluent-media' if index is not None else 'media',
+               p['image'], c['case_directory'], remote,
                '--preset', remote+'/preset.json']
+    if index is not None:
+        command += ['--index', remote+'/source-index.json']
     record['phase'] = 'submitting'; write_json(state/'operation.local.json', record)
     result = ssh(alias, shlex.join(command))
     if not re.fullmatch(r'\d+(;\S+)?', result): raise ValueError('ambiguous sbatch result; inspect queue before retrying')
@@ -98,7 +117,10 @@ def operation(state):
 def status(state, cancel=False):
     o = operation(state)
     queue = ssh(o['alias'], "squeue -h -j "+o['job_id']+" -o '%T|%j|%Z'")
-    if queue and not queue.endswith('|guanlan-media|'+o['remote']): raise ValueError('job identity mismatch')
+    if queue:
+        parts = queue.split('|')
+        if len(parts) != 3 or parts[1].strip() != 'guanlan-media' or parts[2].strip() != o['remote']:
+            raise ValueError('job identity mismatch')
     if cancel and queue: ssh(o['alias'], 'scancel '+o['job_id'])
     accounting = ssh(o['alias'], 'sacct -j '+o['job_id']+' --noheader --parsable2 --format=JobID,State,ExitCode,Elapsed,MaxRSS')
     return {'job_id': o['job_id'], 'queue': queue, 'accounting': accounting, 'cancel_requested': bool(cancel and queue)}
