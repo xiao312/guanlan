@@ -1,5 +1,10 @@
 # Guanlan architecture
 
+Platform boundaries and planned Windows/Linux parity are documented in
+[cross-platform support](cross-platform-support.md). The proposed ECS case-platform
+adapter and protected delivery/session boundary are described in
+[platform integration](platform-integration.md); these are plans, not deployed services.
+
 ## Media-first sharing
 
 `media CLI -> media.remote -> OpenSSH/Slurm -> ParaView media.render/media.fluent`

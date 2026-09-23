@@ -1,5 +1,9 @@
 # ParaView media sharing
 
+Known PR #1 limitation: Fluent local validation/submission imports Linux-only
+worker dependencies and currently fails on Windows. Representation captions also
+need a Fluent-aware update. See the [cross-platform remediation plan](../../../docs/cross-platform-support.md).
+
 Responsibility: turn an engineer's bounded preset into ParaView-rendered PNG frames,
 transfer only media/metadata, and assemble a self-contained block-based HTML.
 Optional local ffmpeg compilation makes one MP4 per block/field. No Matplotlib,

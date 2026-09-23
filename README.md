@@ -31,6 +31,11 @@ unqualified; reader/media qualification is limited to tested cases. See
 
 ## Development
 
+Windows and Linux are target client/control platforms; parity is not yet complete.
+See the [cross-platform support plan](docs/cross-platform-support.md) for known
+issues and acceptance gates, and the [CFD platform integration handoff](docs/platform-integration.md)
+for existing capabilities versus proposed service contracts.
+
 Python 3.12+ and Node/npm are required. From the repository root:
 
 ```powershell
