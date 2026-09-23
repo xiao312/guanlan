@@ -60,7 +60,9 @@ Copy `config/live.example.json` to ignored `config/live.local.json` and supply
 your own SSH alias, case path, ParaView executable, workspace and resource limits.
 Inspect `./scripts/live.ps1 -Check` before authorizing execution. Heavy work must
 run through the scheduler, never on an HPC login node. Solver files remain
-read-only. Fluent and runtime extraction integration are not yet qualified.
+read-only. A planar Fluent CFF media pilot is qualified for geometry, mesh and
+scalar cell fields in [ParaView media sharing](src/guanlan/media/README.md);
+the live route and general Fluent extraction remain unqualified.
 
 See [operation](docs/real-case-runbook.md), [architecture](docs/architecture.md),
 [contracts](docs/contracts.md) and [milestones](docs/milestones.md).

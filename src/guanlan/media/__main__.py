@@ -28,7 +28,11 @@ def main():
     args = parser.parse_args()
     if args.action == 'check':
         p, c = remote.profile(args.profile)
-        result = {'preset': validate(remote.read_json(args.preset)), 'alias': p['ssh_alias'],
+        preset = validate(remote.read_json(args.preset))
+        if c.get('source_format') == 'fluent-cff':
+            from guanlan.media.fluent import validate_index
+            validate_index(remote.read_json(c['source_index']), preset)
+        result = {'preset': preset, 'source_format': c.get('source_format', 'openfoam'), 'alias': p['ssh_alias'],
                   'case': c['case_directory'], 'cpus': c['cpus'], 'memory_mb': c['memory_mb'], 'mutates': False}
     elif args.action == 'submit': result = remote.submit(args.profile, args.preset, args.state, args.minutes)
     elif args.action in ('status', 'cancel'): result = remote.status(args.state, args.action == 'cancel')

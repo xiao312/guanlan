@@ -4,8 +4,9 @@ from pathlib import Path
 import tempfile
 import unittest
 import zipfile
+from unittest.mock import patch
 from guanlan.media.contract import digest, validate, validate_manifest
-from guanlan.media.remote import unpack, write_json
+from guanlan.media.remote import unpack, write_json, status
 from guanlan.media.package import package
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -33,11 +34,20 @@ class MediaTests(unittest.TestCase):
         p['blocks'][0]['range'] = [10, 20]
         self.assertEqual(validate(p)['blocks'][0]['range'], [10, 20])
 
+    def test_normalized_camera_focus(self):
+        p = self.preset()
+        p['blocks'][0]['focus'] = [0, 0.2, 0, 1]
+        self.assertEqual(validate(p)['blocks'][0]['focus'], [0, 0.2, 0, 1])
+
     def test_invalid_presets(self):
         for mutate in [lambda p: p.update(times=['0.2', '0.1']), lambda p: p.update(times=['nan']),
                        lambda p: p.update(size=[4096, 4096]), lambda p: p['blocks'][0].update(fields=['../p']),
                        lambda p: p['blocks'][0].update(offset=0), lambda p: p['blocks'][0].update(range=[1, 1]),
-                       lambda p: p['blocks'][0].update(camera='guess'), lambda p: p.update(source_path='/secret')]:
+                       lambda p: p['blocks'][0].update(camera='guess'),
+                       lambda p: p['blocks'][0].update(focus=[0.8, 0.2, 0, 1]),
+                       lambda p: p['blocks'][0].update(focus=[0, 2, 0, 1]),
+                       lambda p: p['blocks'][0].update(palette='Inferno (matplotlib)'),
+                       lambda p: p.update(source_path='/secret')]:
             p = self.preset(); mutate(p)
             with self.assertRaises(ValueError): validate(p)
 
@@ -110,6 +120,16 @@ class MediaTests(unittest.TestCase):
             self.assertIn('data:video/mp4;base64,', (root/'video.html').read_text(encoding='utf-8'))
             (videos/'xy-p.mp4').write_bytes(b'changed')
             with self.assertRaises(ValueError): package(root, root/'bad-video.html', videos)
+
+    def test_status_accepts_slurm_padded_job_name(self):
+        with tempfile.TemporaryDirectory(dir=ROOT/'state/tests') as d:
+            root = Path(d)
+            remote = '/private/guanlan/case/media-123456789abc'
+            write_json(root/'operation.local.json',
+                       {'alias': 'scnet', 'remote': remote, 'job_id': '12345', 'phase': 'submitted'})
+            with patch('guanlan.media.remote.ssh', side_effect=[
+                    'RUNNING|guanlan-media |'+remote, '12345|RUNNING|0:0|00:00:10|']):
+                self.assertEqual(status(root)['job_id'], '12345')
 
 
 if __name__ == '__main__': unittest.main()

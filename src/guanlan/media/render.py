@@ -14,7 +14,7 @@ from guanlan.worker.boundaries import physical_boundaries
 from guanlan.worker.protocol import emit, report_exception
 
 
-def camera(pvs, view, bounds, preset):
+def camera(pvs, view, bounds, preset, focus=None, reserve_legend=False):
     center = [(bounds[2*i] + bounds[2*i+1])/2 for i in range(3)]
     size = max(bounds[2*i+1]-bounds[2*i] for i in range(3))
     direction = {'xy': [0, 0, 1], 'xz': [0, -1, 0], 'yz': [1, 0, 0], 'isometric': [1, -1, 1]}[preset]
@@ -23,6 +23,22 @@ def camera(pvs, view, bounds, preset):
     view.CameraPosition = [center[i] + 2*size*direction[i] for i in range(3)]
     view.CameraViewUp = [0, 1, 0] if preset == 'xy' else [0, 0, 1]
     pvs.ResetCamera(view)
+    if focus is not None:
+        axes = {'xy': (0, 1), 'xz': (0, 2), 'yz': (1, 2)}[preset]
+        focal = list(center)
+        spans = []
+        for axis, lower, upper in zip(axes, focus[::2], focus[1::2]):
+            extent = bounds[2*axis+1] - bounds[2*axis]
+            focal[axis] = bounds[2*axis] + (lower + upper)*extent/2
+            spans.append((upper - lower)*extent)
+        if reserve_legend:
+            # Leave clear bands above and below focused scalar views for
+            # the title and legend without clipping the field.
+            focal[axes[1]] -= 0.03*spans[1]
+        view.CameraFocalPoint = focal
+        view.CameraPosition = [focal[i] + 2*size*direction[i] for i in range(3)]
+        aspect = view.ViewSize[0] / view.ViewSize[1]
+        view.CameraParallelScale = (0.78 if reserve_legend else 0.54)*max(spans[1], spans[0]/aspect)
 
 
 def run(case_path, workspace_path, preset_path):
@@ -88,7 +104,7 @@ def run(case_path, workspace_path, preset_path):
         display.InterpolateScalarsBeforeMapping = 0
         if is_slice:
             display.Ambient, display.Diffuse, display.Specular = 1, 0, 0
-        camera(pvs, view, source.GetDataInformation().GetBounds(), block['camera'])
+        camera(pvs, view, source.GetDataInformation().GetBounds(), block['camera'], block.get('focus'), is_slice)
         caption = pvs.Text()
         caption_display = pvs.Show(caption, view)
         caption_display.Color = [0.15, 0.18, 0.22]

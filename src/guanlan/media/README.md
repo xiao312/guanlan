@@ -19,11 +19,15 @@ JSON. See `examples/media-preset.json`. Preset version 1 requires a public-safe
 title/case_label, explicit existing `times` (1-24), image `size` (320-1920 by
 240-1080), and 1-8 blocks. Geometry/mesh blocks use physical boundaries only;
 optional `patches` restrict them. Slice blocks require plane xy/xz/yz, normalized
-offset (strictly 0-1), fields (1-8), and palette Viridis/Cool to Warm/Inferno.
+offset (strictly 0-1), fields (1-8), and palette Viridis/Cool to Warm.
 Scalar-only, cell-associated values without point interpolation. `range` is
 `data` (per-frame data range, clearly labeled) or a fixed increasing numeric pair
 (recommended for temporal comparisons). Camera defaults to the slice plane or xy;
 xy/xz/yz/isometric are supported. At most 192 rendered frames and 64 MiB media.
+Planar blocks may set `focus: [u0, u1, v0, v1]` with normalized bounds in
+the selected camera plane. This changes the captured camera region without
+clipping source cells or changing field ranges. Use a separate block for the
+full domain and an injector close-up when both are needed.
 
 Outputs: remote `output/manifest.json`, PNGs, and `media.zip`; local selected
 verified PNGs/manifest and HTML. Frames bind to block, field, timestep, physical
@@ -43,6 +47,25 @@ Existing output is never overwritten. Partial jobs require inspection/new state.
 performed, playback uses uniform frame cadence with actual simulation times burned
 into the frames. It does not claim uniform physical-time sampling.
 Dependents: CLI, `guanlan-share` skill. The legacy live module is not used.
+
+## Fluent CFF pilot
+
+Set `source_format: "fluent-cff"` and an absolute local `source_index` path in
+the ignored case profile. The source index has version 1, `format: "fluent-cff"`,
+`frames` mapping each preset time to matching `.cas.h5`/`.dat.h5` basenames, and
+`fields` mapping each public field label to a native scalar cell array and unit.
+The two files for every time must live in the read-only case directory. The index
+is deployed only to the private request workspace; the manifest and offline HTML
+contain no source filenames. The CLI checks the mapping before submitting.
+
+This pilot reads native planar XY CFF data with ParaView's FLUENTCFFReader. Its
+geometry block shows the fluid domain; its mesh block shows original cell edges.
+The `slice` block displays the native 2D plane at z=0; only `plane: "xy"` with
+`offset: 0.5` is accepted. Vector operations, boundary patch selection, and
+three-dimensional Fluent slicing require separate qualification. The currently
+qualified ParaView reader drops Fluent species arrays with more than nine
+components, so only scalar arrays actually present in the reader may be mapped.
+It cannot claim OH or CH4 from such a dropped array.
 
 ## Example
 
